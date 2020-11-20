@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <title>HTML test page</title>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+  </head>
+  <body>
+    <div>
+      <div class="header">
+        <h2>Test Form List</h2>
+      </div>
+      <div class="main-wrapper">
+        <div class="main">
+          <div>
+            <div class="list-header" id="list-header">
+              <button id="list-header__reset-list">Reset list</button>
+              <button id="list-header__add-todo">Add item to list</button>
+            </div>
+            <div class="add-form hide" id="add-form">
+              <div class="form-wrapper">
+                <div class="form">
+                  <form>
+                    <div>
+                      <label for="add-form__input-name">Name:</label>
+                      <input type="text" id="add-form__input-name" />
+                    </div>
+                    <div>
+                      <label>Status:</label>
+                      <div>
+                        <div>
+                          <input
+                            type="radio"
+                            id="add-form__enabled"
+                            name="add-form__status"
+                            value="1"
+                            checked
+                          />
+                          <label for="add-form__enabled">Enabled</label>
+                        </div>
+                        <div>
+                          <input
+                            type="radio"
+                            id="add-form__disabled"
+                            name="add-form__status"
+                            value="0"
+                          />
+                          <label for="add-form__disabled">Disabled</label>
+                        </div>
+                      </div>
+                    </div>
+                    <div class="form-footer">
+                      <button class="form-btn" id="add-form__cancel-btn">
+                        Cancel
+                      </button>
+                      <button class="form-btn" id="add-form__confirm-btn">
+                        Add to list
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+            <div class="list-wrapper">
+              <div class="list" id="list"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div></div>
+    </div>
+    <div class="modal-wrapper hide" id="modal-wrapper">
+      <div class="modal-background"></div>
+      <div class="modal-content">
+        <div class="form-wrapper">
+          <div class="form">
+            <form>
+              <div>
+                <label for="edit-form__input-name">Name:</label>
+                <input type="text" id="edit-form__input-name" />
+              </div>
+              <div>
+                <label>Status:</label>
+                <div>
+                  <div>
+                    <input
+                      type="radio"
+                      id="edit-form__enabled"
+                      name="edit-form__status"
+                      value="1"
+                      checked
+                    />
+                    <label for="edit-form__enabled">Enabled</label>
+                  </div>
+                  <div>
+                    <input
+                      type="radio"
+                      id="edit-form__disabled"
+                      name="edit-form__status"
+                      value="0"
+                    />
+                    <label for="edit-form__disabled">Disabled</label>
+                  </div>
+                </div>
+              </div>
+              <div class="form-footer">
+                <button class="form-btn" id="edit-form__cancel-btn">
+                  Cancel
+                </button>
+                <button class="form-btn" id="edit-form__save-btn">
+                  Save item
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+  </body>
+
+  <script type="text/javascript">
+    const TODOS = "todos";
+    let todoList = document.querySelector("#list");
+    let prevInputNameValue;
+
+    const createListItemInnerData = (dataType, value) => {
+      let listItemData = document.createElement("span");
+      listItemData.classList.add(`list-item__${dataType}`);
+      listItemData.innerHTML = value;
+
+      return listItemData;
+    };
+
+    const createListItemInner = (name, disabled) => {
+      let listItemInner = document.createElement("span");
+      listItemInner.classList.add("list-item__inner");
+
+      let listItemName = createListItemInnerData("name", name);
+      let listItemStatus = createListItemInnerData(
+        "status",
+        disabled ? "disabled" : "enabled"
+      );
+
+      listItemInner.appendChild(listItemName);
+      listItemInner.appendChild(listItemStatus);
+
+      return listItemInner;
+    };
+
+    const onOpenTodoEditor = (e, name, disabled) => {
+      e.preventDefault();
+      let modal = document.querySelector("#modal-wrapper");
+      document.querySelector(
+        "#edit-form__input-name"
+      ).value = prevInputNameValue = name;
+      document.querySelector("#edit-form__disabled").checked = disabled;
+
+      modal.classList.remove("hide");
+    };
+
+    const onCloseTodoEditor = (e) => {
+      e.preventDefault();
+      let modal = document.querySelector("#modal-wrapper");
+      modal.classList.add("hide");
+    };
+
+    const onOpenTodoCreator = (e) => {
+      e.preventDefault();
+      let creator = document.querySelector("#add-form");
+      creator.classList.remove("hide");
+    };
+
+    const onCloseTodoCreator = (e) => {
+      e.preventDefault();
+      let creator = document.querySelector("#add-form");
+      creator.classList.add("hide");
+    };
+
+    const onRemoveTodo = (e, parentNode, name) => {
+      e.preventDefault();
+      todos.splice(
+        todos.findIndex((todo) => todo.name === name),
+        1
+      );
+      window.localStorage.setItem(TODOS, JSON.stringify(todos));
+      todoList.removeChild(parentNode);
+    };
+
+    const onSaveTodo = (e) => {
+      e.preventDefault();
+
+      let inputNewTodoName = document.querySelector("#edit-form__input-name");
+      let inputIsTodoDisabled = document.querySelector("#edit-form__disabled")
+        .checked;
+
+      if (!inputNewTodoName.value) return;
+
+      let changedTodoIndex = todos.findIndex(
+        (todo) => todo.name === prevInputNameValue
+      );
+
+      todos.splice(changedTodoIndex, 1);
+
+      todos.push({
+        name: inputNewTodoName.value,
+        disabled: inputIsTodoDisabled,
+      });
+
+      let todoIndex = (nodeIndex = 0);
+
+      while (nodeIndex < todoList.childNodes.length) {
+        if (todoList.childNodes[nodeIndex].nodeType === 1) {
+          if (todoIndex === changedTodoIndex) {
+            let oldElement = todoList.childNodes[nodeIndex];
+            todoList.removeChild(oldElement);
+            let newListItem = createListItem(
+              inputNewTodoName.value,
+              inputIsTodoDisabled
+            );
+            todoList.appendChild(newListItem);
+            break;
+          }
+          todoIndex++;
+          nodeIndex++;
+        } else {
+          nodeIndex++;
+        }
+      }
+
+      onCloseTodoEditor(e);
+
+      window.localStorage.setItem(TODOS, JSON.stringify(todos));
+    };
+
+    const onResetList = (e) => {
+      e.preventDefault();
+      todos = [];
+      window.localStorage.setItem(TODOS, JSON.stringify(todos));
+
+      let child = todoList.lastElementChild;
+
+      while (child) {
+        todoList.removeChild(child);
+        child = todoList.lastElementChild;
+      }
+    };
+
+    const onAddTodoButton = (e) => {
+      e.preventDefault();
+
+      let isDisabled = document.querySelector("#add-form__disabled").checked;
+      let inputTodoName = document.querySelector("#add-form__input-name");
+
+      let newListItem = createListItem(inputTodoName.value, isDisabled);
+      todoList.appendChild(newListItem);
+
+      saveTodoToStorage(inputTodoName.value, isDisabled);
+
+      inputTodoName.value = "";
+    };
+
+    const createListItemControlsBtn = (type, parentNode, name, disabled) => {
+      let listItemControlsBtn = document.createElement("span");
+      listItemControlsBtn.classList.add("list-item__controls-btn");
+
+      let listItemIcon = document.createElement("span");
+      listItemIcon.classList.add(`list-item__${type}-icon`);
+
+      type === "edit" &&
+        listItemControlsBtn.addEventListener("click", (e) =>
+          onOpenTodoEditor(e, name, disabled)
+        );
+      type === "remove" &&
+        listItemControlsBtn.addEventListener("click", (e) =>
+          onRemoveTodo(e, parentNode, name)
+        );
+
+      listItemControlsBtn.appendChild(listItemIcon);
+
+      return listItemControlsBtn;
+    };
+
+    const createListItem = (name, disabled) => {
+      let listItem = document.createElement("div");
+      listItem.classList.add("list-item");
+
+      if (!name) return;
+
+      let listItemInner = createListItemInner(name, disabled);
+
+      listItem.appendChild(listItemInner);
+
+      let listItemControls = document.createElement("span");
+      listItemControls.classList.add("list-item__controls");
+
+      let listItemControlsEditBtn = createListItemControlsBtn(
+        "edit",
+        listItem,
+        name,
+        disabled
+      );
+      let listItemControlsRemoveBtn = createListItemControlsBtn(
+        "remove",
+        listItem,
+        name,
+        disabled
+      );
+
+      listItemControls.appendChild(listItemControlsEditBtn);
+      listItemControls.appendChild(listItemControlsRemoveBtn);
+
+      listItem.appendChild(listItemControls);
+
+      return listItem;
+    };
+
+    const saveTodoToStorage = (name, disabled) => {
+      todos.push({ name, disabled });
+      window.localStorage.setItem(TODOS, JSON.stringify(todos));
+    };
+
+    let cancelEditTodoButton = document.querySelector("#edit-form__cancel-btn");
+    cancelEditTodoButton.addEventListener("click", onCloseTodoEditor);
+
+    let editTodoSaveButton = document.querySelector("#edit-form__save-btn");
+    editTodoSaveButton.addEventListener("click", onSaveTodo);
+
+    let addNewTodoButton = document.querySelector("#list-header__add-todo");
+    addNewTodoButton.addEventListener("click", onOpenTodoCreator);
+
+    let cancelAddNewTodoButton = document.querySelector(
+      "#add-form__cancel-btn"
+    );
+    cancelAddNewTodoButton.addEventListener("click", onCloseTodoCreator);
+
+    let resetListButton = document.querySelector("#list-header__reset-list");
+    resetListButton.addEventListener("click", onResetList);
+
+    let addTodoConfirmButton = document.querySelector("#add-form__confirm-btn");
+    addTodoConfirmButton.addEventListener("click", onAddTodoButton);
+
+    let todos;
+    if (!window.localStorage.getItem(TODOS)) {
+      todos = [];
+      window.localStorage.setItem(TODOS, JSON.stringify(todos));
+    } else {
+      todos = JSON.parse(window.localStorage.getItem(TODOS));
+      todos.forEach(({ name, disabled }) => {
+        let newListItem = createListItem(name, disabled);
+        todoList.appendChild(newListItem);
+      });
+    }
+  </script>
+  <style>
+    .header {
+      text-align: center;
+    }
+    .main-wrapper {
+      display: flex;
+      justify-content: center;
+    }
+    .main {
+    }
+    .list-wrapper {
+      display: flex;
+      width: 250px;
+    }
+    .list-header {
+      display: flex;
+      justify-content: space-between;
+      width: 100%;
+      margin-bottom: 10px;
+    }
+    .list-header.hide {
+      display: none;
+    }
+    .list {
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      padding: 10px;
+      width: 100%;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .list-item {
+      position: relative;
+      border: 1px solid #ccc;
+      border-radius: 3px;
+      padding: 5px 60px 5px 5px;
+    }
+    .list-item + .list-item {
+      margin-top: 10px;
+    }
+    .list-item__inner {
+      width: 100%;
+      display: inline-flex;
+      justify-content: space-between;
+    }
+    .list-item__name {
+      max-width: calc(100% - 60px);
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    .list-item__controls {
+      position: absolute;
+      right: 0;
+      top: 0;
+      display: inline-flex;
+      height: 100%;
+    }
+    .list-item__controls-btn {
+      cursor: pointer;
+      padding: 5px;
+    }
+    .list-item__edit-icon {
+      background-image: url("./assets/edit.svg");
+    }
+    .list-item__remove-icon {
+      background-image: url("./assets/remove.svg");
+    }
+    .list-item__edit-icon,
+    .list-item__remove-icon {
+      width: 16px;
+      height: 16px;
+      display: inline-block;
+      background-repeat: no-repeat;
+    }
+
+    .add-form {
+      position: relative;
+      background-color: #ffffff;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+      margin-bottom: 10px;
+    }
+
+    .add-form.hide {
+      display: none;
+    }
+
+    .form-btn {
+      margin: 0 10px;
+    }
+
+    .form-footer {
+      display: flex;
+      justify-content: center;
+      padding-top: 10px;
+    }
+
+    .modal-wrapper {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-wrapper.hide {
+      display: none;
+    }
+    .modal-wrapper .modal-background {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      bottom: 0;
+      background-color: #000;
+      opacity: 0.5;
+    }
+    .modal-wrapper .modal-content {
+      position: relative;
+      background-color: #ffffff;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 5px;
+    }
+  </style>
+</html>
